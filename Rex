@@ -22,7 +22,7 @@ local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
-			TextFont = "Default", -- Default will use the various font faces used across Rayfield
+			TextFont = "Default",
 			TextColor = Color3.fromRGB(240, 240, 240),
 
 			Background = Color3.fromRGB(25, 25, 25),
@@ -40,9 +40,9 @@ local RayfieldLibrary = {
 
 			ElementBackground = Color3.fromRGB(35, 35, 35),
 			ElementBackgroundHover = Color3.fromRGB(40, 40, 40),
-			SecondaryElementBackground = Color3.fromRGB(25, 25, 25), -- For labels and paragraphs
+			SecondaryElementBackground = Color3.fromRGB(25, 25, 25),
 			ElementStroke = Color3.fromRGB(50, 50, 50),
-			SecondaryElementStroke = Color3.fromRGB(40, 40, 40), -- For labels and paragraphs
+			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
 
 			SliderBackground = Color3.fromRGB(43, 105, 159),
 			SliderProgress = Color3.fromRGB(43, 105, 159),
@@ -61,8 +61,8 @@ local RayfieldLibrary = {
 			PlaceholderColor = Color3.fromRGB(178, 178, 178)
 		},
 		Light = {
-			TextFont = "Gotham", -- Default will use the various font faces used across Rayfield
-			TextColor = Color3.fromRGB(50, 50, 50), -- i need to make all text 240, 240, 240 and base gray on transparency not color to do this
+			TextFont = "Gotham",
+			TextColor = Color3.fromRGB(50, 50, 50),
 
 			Background = Color3.fromRGB(255, 255, 255),
 			Topbar = Color3.fromRGB(217, 217, 217),
@@ -79,9 +79,9 @@ local RayfieldLibrary = {
 
 			ElementBackground = Color3.fromRGB(198, 198, 198),
 			ElementBackgroundHover = Color3.fromRGB(230, 230, 230),
-			SecondaryElementBackground = Color3.fromRGB(136, 136, 136), -- For labels and paragraphs
+			SecondaryElementBackground = Color3.fromRGB(136, 136, 136),
 			ElementStroke = Color3.fromRGB(180, 199, 97),
-			SecondaryElementStroke = Color3.fromRGB(40, 40, 40), -- For labels and paragraphs
+			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
 
 			SliderBackground = Color3.fromRGB(31, 159, 71),
 			SliderProgress = Color3.fromRGB(31, 159, 71),
@@ -144,7 +144,6 @@ local function GetClosestPlayer()
             if not TargetPart then TargetPart = TargetChar:FindFirstChild("HumanoidRootPart") end
             if not TargetPart then continue end
             
-            -- WallCheck
             if Aimbot.WallCheck then
                 local RaycastParams = RaycastParams.new()
                 RaycastParams.FilterDescendantsInstances = {Character}
@@ -187,7 +186,6 @@ local function GetAimAngle(Player)
     return CFrame.Angles(Pitch, Yaw, 0)
 end
 
--- Aimbot toggle
 function Aimbot:Toggle()
     self.Enabled = not self.Enabled
     return self.Enabled
@@ -201,7 +199,6 @@ function Aimbot:SetFOV(value)
     self.FOV = value
 end
 
--- Aimbot loop
 spawn(function()
     while wait() do
         if Aimbot.Enabled then
@@ -229,18 +226,15 @@ local ESP = {
     Transparency = 0.5
 }
 
--- ESP Storage
 local ESPObjects = {}
 local ChamsObjects = {}
 
--- Create Health Bar
 local function CreateHealthBar(player)
     local character = player.Character
     if not character then return end
     local humanoid = character:FindFirstChild("Humanoid")
     if not humanoid then return end
     
-    -- Ana bar background
     local barBg = Instance.new("BillboardGui")
     barBg.Name = "ESP_HealthBar"
     barBg.Size = UDim2.new(0, 60, 0, 8)
@@ -255,7 +249,6 @@ local function CreateHealthBar(player)
     bg.BorderSizePixel = 0
     bg.Parent = barBg
     
-    -- Health fill
     local fill = Instance.new("Frame")
     fill.Name = "Fill"
     fill.Size = UDim2.new(1, 0, 1, 0)
@@ -263,7 +256,6 @@ local function CreateHealthBar(player)
     fill.BorderSizePixel = 0
     fill.Parent = bg
     
-    -- Border
     local border = Instance.new("UIStroke")
     border.Color = Color3.fromRGB(255, 255, 255)
     border.Thickness = 1
@@ -272,7 +264,6 @@ local function CreateHealthBar(player)
     return barBg
 end
 
--- Create Chams
 local function CreateChams(player)
     local character = player.Character
     if not character then return end
@@ -281,11 +272,9 @@ local function CreateChams(player)
     
     for _, part in ipairs(character:GetDescendants()) do
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-            -- Orijinal material ve color'u kaydet
             local originalMaterial = part.Material
             local originalColor = part.Color
             
-            -- Yeni part oluştur (chams)
             local chamPart = part:Clone()
             chamPart.Name = "ESP_Cham"
             chamPart.Parent = part
@@ -295,7 +284,6 @@ local function CreateChams(player)
             chamPart.CanCollide = false
             chamPart.Anchored = false
             
-            -- :p
             table.insert(chamsTable, {
                 Part = part,
                 ChamPart = chamPart,
@@ -308,7 +296,6 @@ local function CreateChams(player)
     ChamsObjects[player] = chamsTable
 end
 
--- Update Chams Color
 local function UpdateChamsColor()
     for player, chamsTable in pairs(ChamsObjects) do
         for _, data in ipairs(chamsTable) do
@@ -320,7 +307,6 @@ local function UpdateChamsColor()
     end
 end
 
--- Remove ESP for a player
 local function RemoveESP(player)
     if ESPObjects[player] then
         for _, obj in ipairs(ESPObjects[player]) do
@@ -341,7 +327,6 @@ local function RemoveESP(player)
     end
 end
 
--- ESP Loop
 spawn(function()
     while wait(0.5) do
         if ESP.Enabled then
@@ -351,7 +336,6 @@ spawn(function()
             for _, player in pairs(Players:GetPlayers()) do
                 if player == LocalPlayer then continue end
                 if ESP.TeamCheck and player.Team == LocalTeam then
-                    -- Takım arkadaşı ise ESP'yi kaldır
                     RemoveESP(player)
                     continue
                 end
@@ -368,7 +352,6 @@ spawn(function()
                     continue
                 end
                 
-                -- Health Bar
                 if ESP.HealthBar then
                     if not ESPObjects[player] then
                         ESPObjects[player] = {}
@@ -378,12 +361,10 @@ spawn(function()
                     for _, obj in ipairs(ESPObjects[player]) do
                         if obj.Name == "ESP_HealthBar" then
                             hasHealthBar = true
-                            -- Update health
                             local fill = obj:FindFirstChild("Fill")
                             if fill then
                                 local healthPercent = humanoid.Health / humanoid.MaxHealth
                                 fill.Size = UDim2.new(healthPercent, 0, 1, 0)
-                                -- Color: Green -> Yellow -> Red
                                 if healthPercent > 0.5 then
                                     fill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
                                 elseif healthPercent > 0.25 then
@@ -402,7 +383,6 @@ spawn(function()
                         end
                     end
                 else
-                    -- Health Bar kapalıysa kaldır
                     if ESPObjects[player] then
                         for _, obj in ipairs(ESPObjects[player]) do
                             if obj.Name == "ESP_HealthBar" then
@@ -412,7 +392,6 @@ spawn(function()
                     end
                 end
                 
-                -- Chams
                 if ESP.Chams then
                     if not ChamsObjects[player] then
                         CreateChams(player)
@@ -424,7 +403,6 @@ spawn(function()
                 end
             end
         else
-            -- ESP kapalıysa her şeyi temizle
             for player, _ in pairs(ESPObjects) do
                 RemoveESP(player)
             end
@@ -435,7 +413,6 @@ spawn(function()
     end
 end)
 
--- Player eklendiğinde
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function()
         wait(0.5)
@@ -445,16 +422,13 @@ Players.PlayerAdded:Connect(function(player)
     end)
 end)
 
--- Player çıktığında
 Players.PlayerRemoving:Connect(function(player)
     RemoveESP(player)
 end)
 
--- ESP Fonksiyonları
 function ESP:Toggle()
     self.Enabled = not self.Enabled
     if not self.Enabled then
-        -- Temizlik yap
         for player, _ in pairs(ESPObjects) do
             RemoveESP(player)
         end
@@ -480,7 +454,6 @@ end
 local Rayfield = game:GetObjects("rbxassetid://10804731440")[1]
 
 Rayfield.Enabled = false
-
 
 if gethui then
 	Rayfield.Parent = gethui()
@@ -510,7 +483,6 @@ else
 end
 
 -- Object Variables
-
 local Camera = workspace.CurrentCamera
 local Main = Rayfield.Main
 local Topbar = Main.Topbar
@@ -520,9 +492,6 @@ local TabList = Main.TabList
 
 Rayfield.DisplayOrder = 100
 LoadingFrame.Version.Text = Release
-
-
--- Variables
 
 local request = (syn and syn.request) or (http and http.request) or http_request
 local CFileName = nil
@@ -633,7 +602,7 @@ local function SaveConfiguration()
 	writefile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
 end
 
-local neon = (function() -- Open sourced neon module
+local neon = (function()
 	local module = {}
 
 	do
@@ -930,9 +899,6 @@ function RayfieldLibrary:Notify(NotificationSettings)
 		TweenService:Create(Notification.Description, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {TextTransparency = 0.2}):Play()
 		wait(0.2)
 
-
-
-		-- Requires Graphics Level 8-10
 		if getgenv().SecureMode == nil then
 			TweenService:Create(Notification, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.4}):Play()
 		else
@@ -1309,7 +1275,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 				})
 			end
 
-			if Settings.Discord.RememberJoins then -- We do logic this way so if the developer changes this setting, the user still won't be prompted, only new users
+			if Settings.Discord.RememberJoins then
 				writefile(RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"Rayfield RememberJoins is true for this invite, this invite will not ask you to join again")
 			end
 		else
@@ -1524,7 +1490,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 	Elements.UIPageLayout.FillDirection = Enum.FillDirection.Horizontal
 	TabList.Template.Visible = false
 
-	-- Tab
 	local FirstTab = false
 	local Window = {}
 	function Window:CreateTab(Name,Image)
@@ -1553,7 +1518,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 		TabButton.Visible = true
 
-		-- Create Elements Page
 		local TabPage = Elements.Template:Clone()
 		TabPage.Name = Name
 		TabPage.Visible = true
@@ -1577,7 +1541,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TabButton.Shadow.Visible = false
 		end
 		TabButton.UIStroke.Color = SelectedTheme.TabStroke
-		-- Animate
+
 		wait(0.1)
 		if FirstTab then
 			TabButton.BackgroundColor3 = SelectedTheme.TabBackground
@@ -1587,7 +1551,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			TweenService:Create(TabButton.Title, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {TextTransparency = 0.2}):Play()
 			TweenService:Create(TabButton.Image, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {ImageTransparency = 0.2}):Play()
 			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Quint), {Transparency = 0}):Play()
-
 			TweenService:Create(TabButton.Shadow, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {ImageTransparency = 0.7}):Play()
 		else
 			FirstTab = Name
@@ -1635,7 +1598,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 		local Tab = {}
 
-		-- Button
 		function Tab:CreateButton(ButtonSettings)
 			local ButtonValue = {}
 
@@ -1697,8 +1659,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ButtonValue
 		end
 
-		-- ColorPicker
-		function Tab:CreateColorPicker(ColorPickerSettings) -- by Throit
+		function Tab:CreateColorPicker(ColorPickerSettings)
 			ColorPickerSettings.Type = "ColorPicker"
 			local ColorPicker = Elements.Template.ColorPicker:Clone()
 			local Background = ColorPicker.CPBackground
@@ -1781,12 +1742,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 			local hex = string.format("#%02X%02X%02X",color.R*0xFF,color.G*0xFF,color.B*0xFF)
 			ColorPicker.HexInput.InputBox.Text = hex
 			local function setDisplay()
-				--Main
 				Main.MainPoint.Position = UDim2.new(s,-Main.MainPoint.AbsoluteSize.X/2,1-v,-Main.MainPoint.AbsoluteSize.Y/2)
 				Main.MainPoint.ImageColor3 = Color3.fromHSV(h,s,v)
 				Background.BackgroundColor3 = Color3.fromHSV(h,1,1)
 				Display.BackgroundColor3 = Color3.fromHSV(h,s,v)
-				--Slider 
 				local x = h * Slider.AbsoluteSize.X
 				Slider.SliderPoint.Position = UDim2.new(0,x-Slider.SliderPoint.AbsoluteSize.X/2,0.5,0)
 				Slider.SliderPoint.ImageColor3 = Color3.fromHSV(h,1,1)
@@ -1816,7 +1775,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 				ColorPickerSettings.Color = Color3.fromRGB(r,g,b)
 				SaveConfiguration()
 			end)
-			--RGB
 			local function rgbBoxes(box,toChange)
 				local value = tonumber(box.Text) 
 				local color = Color3.fromHSV(h,s,v) 
@@ -1904,7 +1862,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ColorPickerSettings
 		end
 
-		-- Section
 		function Tab:CreateSection(SectionName)
 
 			local SectionValue = {}
@@ -1932,7 +1889,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return SectionValue
 		end
 
-		-- Label
 		function Tab:CreateLabel(LabelText)
 			local LabelValue = {}
 
@@ -1959,7 +1915,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return LabelValue
 		end
 
-		-- Paragraph
 		function Tab:CreateParagraph(ParagraphSettings)
 			local ParagraphValue = {}
 
@@ -1994,7 +1949,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ParagraphValue
 		end
 
-		-- Input
 		function Tab:CreateInput(InputSettings)
 			local Input = Elements.Template.Input:Clone()
 			Input.Name = InputSettings.Name
@@ -2052,13 +2006,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 			end)
 
 			local InputSettings = {}
-			function InputSettings:Set(text) --Doesnt fire the event
+			function InputSettings:Set(text)
 				Input.InputFrame.InputBox.Text = text
 			end
 			return InputSettings
 		end
 
-		-- Dropdown
 		function Tab:CreateDropdown(DropdownSettings)
 			local Dropdown = Elements.Template.Dropdown:Clone()
 			if string.find(DropdownSettings.Name,"closed") then
@@ -2172,18 +2125,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 				DropdownOption.BackgroundTransparency = 1
 				DropdownOption.UIStroke.Transparency = 1
 				DropdownOption.Title.TextTransparency = 1
-
-				--local Dropdown = Tab:CreateDropdown({
-				--	Name = "Dropdown Example",
-				--	Options = {"Option 1","Option 2"},
-				--	CurrentOption = {"Option 1"},
-				--  MultipleOptions = true,
-				--	Flag = "Dropdown1",
-				--	Callback = function(TableOfOptions)
-
-				--	end,
-				--})
-
 
 				DropdownOption.Interact.ZIndex = 50
 				DropdownOption.Interact.MouseButton1Click:Connect(function()
@@ -2325,7 +2266,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 						end
 					end
 				end
-				--SaveConfiguration()
 			end
 
 			if Settings.ConfigurationSaving then
@@ -2337,7 +2277,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return DropdownSettings
 		end
 
-		-- Keybind
 		function Tab:CreateKeybind(KeybindSettings)
 			local CheckingForKey = false
 			local Keybind = Elements.Template.Keybind:Clone()
@@ -2391,7 +2330,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 						Keybind.KeybindFrame.KeybindBox:ReleaseFocus()
 						SaveConfiguration()
 					end
-				elseif KeybindSettings.CurrentKeybind ~= nil and (input.KeyCode == Enum.KeyCode[KeybindSettings.CurrentKeybind] and not processed) then -- Test
+				elseif KeybindSettings.CurrentKeybind ~= nil and (input.KeyCode == Enum.KeyCode[KeybindSettings.CurrentKeybind] and not processed) then
 					local Held = true
 					local Connection
 					Connection = input.Changed:Connect(function(prop)
@@ -2418,10 +2357,10 @@ function RayfieldLibrary:CreateWindow(Settings)
 						if Held then
 							local Loop; Loop = RunService.Stepped:Connect(function()
 								if not Held then
-									KeybindSettings.Callback(false) -- maybe pcall this
+									KeybindSettings.Callback(false)
 									Loop:Disconnect()
 								else
-									KeybindSettings.Callback(true) -- maybe pcall this
+									KeybindSettings.Callback(true)
 								end
 							end)	
 						end
@@ -2447,7 +2386,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return KeybindSettings
 		end
 
-		-- Toggle
 		function Tab:CreateToggle(ToggleSettings)
 			local ToggleValue = {}
 
@@ -2594,7 +2532,6 @@ function RayfieldLibrary:CreateWindow(Settings)
 			return ToggleSettings
 		end
 
-		-- Slider
 		function Tab:CreateSlider(SliderSettings)
 			local Dragging = false
 			local Slider = Elements.Template.Slider:Clone()
