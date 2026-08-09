@@ -112,6 +112,7 @@ local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local Camera = workspace.CurrentCamera -- EKLENDI
 
 -- Aimbot Module (Wallcheck + Smooth)
 local Aimbot = {
@@ -2852,8 +2853,21 @@ if Rayfield:FindFirstChild("Notice") then
 	end)
 end
 
-local MainTab = Window:CreateTab("Main", "1234567890") -- Tab oluştur
+-- ==================== WINDOW OLUŞTUR ====================
+local Window = RayfieldLibrary:CreateWindow({
+    Name = "My Script",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by YourName",
+    ConfigurationSaving = {
+        Enabled = true,
+        FileName = "MyScriptConfig"
+    }
+})
 
+-- ==================== TAB OLUŞTUR ====================
+local MainTab = Window:CreateTab("Main", "1234567890")
+
+-- Aimbot Toggle
 MainTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = false,
@@ -2909,7 +2923,7 @@ MainTab:CreateToggle({
     CurrentValue = false,
     Flag = "ESPToggle",
     Callback = function(Value)
-        ESP:Toggle()
+        ESP.Enabled = Value
     end,
 })
 
@@ -2966,6 +2980,6 @@ MainTab:CreateSlider({
     Callback = function(Value)
         ESP:SetTransparency(Value)
     end,
-})	
+})
 
-	return RayfieldLibrary
+return RayfieldLibrary
