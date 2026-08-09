@@ -113,6 +113,368 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 
+-- Aimbot Module (Wallcheck + Smooth)
+local Aimbot = {
+    Enabled = false,
+    Smoothness = 0.3,
+    TeamCheck = true,
+    WallCheck = true,
+    FOV = 150,
+    AimPart = "Head"
+}
+
+local function GetClosestPlayer()
+    local LocalPlayer = Players.LocalPlayer
+    local Character = LocalPlayer.Character
+    if not Character or not Character:FindFirstChild("Humanoid") or Character.Humanoid.Health <= 0 then return nil end
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return nil end
+    
+    local ClosestDistance = Aimbot.FOV
+    local ClosestPlayer = nil
+    
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            if Aimbot.TeamCheck and Player.Team == LocalPlayer.Team then continue end
+            local TargetChar = Player.Character
+            if not TargetChar or not TargetChar:FindFirstChild("Humanoid") or TargetChar.Humanoid.Health <= 0 then continue end
+            
+            local TargetPart = TargetChar:FindFirstChild(Aimbot.AimPart)
+            if not TargetPart then TargetPart = TargetChar:FindFirstChild("HumanoidRootPart") end
+            if not TargetPart then continue end
+            
+            -- WallCheck
+            if Aimbot.WallCheck then
+                local RaycastParams = RaycastParams.new()
+                RaycastParams.FilterDescendantsInstances = {Character}
+                RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                local RayResult = workspace:Raycast(RootPart.Position, (TargetPart.Position - RootPart.Position), RaycastParams)
+                if RayResult and RayResult.Instance and not RayResult.Instance:IsDescendantOf(TargetChar) then
+                    continue
+                end
+            end
+            
+            local ScreenPoint, OnScreen = Camera:WorldToViewportPoint(TargetPart.Position)
+            if not OnScreen then continue end
+            
+            local Distance = (Vector2.new(ScreenPoint.X, ScreenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+            if Distance < ClosestDistance then
+                ClosestDistance = Distance
+                ClosestPlayer = Player
+            end
+        end
+    end
+    return ClosestPlayer
+end
+
+local function GetAimAngle(Player)
+    local LocalPlayer = Players.LocalPlayer
+    local Character = LocalPlayer.Character
+    if not Character then return nil end
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return nil end
+    
+    local TargetChar = Player.Character
+    if not TargetChar then return nil end
+    local TargetPart = TargetChar:FindFirstChild(Aimbot.AimPart) or TargetChar:FindFirstChild("HumanoidRootPart")
+    if not TargetPart then return nil end
+    
+    local Direction = (TargetPart.Position - RootPart.Position).Unit
+    local Yaw = math.atan2(Direction.X, Direction.Z)
+    local Pitch = math.asin(Direction.Y)
+    
+    return CFrame.Angles(Pitch, Yaw, 0)
+end
+
+-- Aimbot toggle
+function Aimbot:Toggle()
+    self.Enabled = not self.Enabled
+    return self.Enabled
+end
+
+function Aimbot:SetSmoothness(value)
+    self.Smoothness = value
+end
+
+function Aimbot:SetFOV(value)
+    self.FOV = value
+end
+
+-- Aimbot loop
+spawn(function()
+    while wait() do
+        if Aimbot.Enabled then
+            local Target = GetClosestPlayer()
+            if Target then
+                local Angle = GetAimAngle(Target)
+                if Angle then
+                    local CurrentCFrame = Camera.CFrame
+                    local TargetCFrame = CurrentCFrame * Angle
+                    Camera.CFrame = Camera.CFrame:Lerp(TargetCFrame, Aimbot.Smoothness)
+                end
+            end
+        end
+    end
+end)
+
+-- ==================== ESP MODULE ====================
+local ESP = {
+    Enabled = false,
+    TeamCheck = true,
+    BoxColor = Color3.fromRGB(255, 255, 255),
+    HealthBar = true,
+    Chams = true,
+    ChamsColor = Color3.fromRGB(0, 255, 0),
+    Transparency = 0.5
+}
+
+-- ESP Storage
+local ESPObjects = {}
+local ChamsObjects = {}
+
+-- Create Health Bar
+local function CreateHealthBar(player)
+    local character = player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    
+    -- Ana bar background
+    local barBg = Instance.new("BillboardGui")
+    barBg.Name = "ESP_HealthBar"
+    barBg.Size = UDim2.new(0, 60, 0, 8)
+    barBg.StudsOffset = Vector3.new(0, 2.5, 0)
+    barBg.AlwaysOnTop = true
+    barBg.Parent = character
+    
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bg.BackgroundTransparency = 0.5
+    bg.BorderSizePixel = 0
+    bg.Parent = barBg
+    
+    -- Health fill
+    local fill = Instance.new("Frame")
+    fill.Name = "Fill"
+    fill.Size = UDim2.new(1, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    fill.BorderSizePixel = 0
+    fill.Parent = bg
+    
+    -- Border
+    local border = Instance.new("UIStroke")
+    border.Color = Color3.fromRGB(255, 255, 255)
+    border.Thickness = 1
+    border.Parent = barBg
+    
+    return barBg
+end
+
+-- Create Chams
+local function CreateChams(player)
+    local character = player.Character
+    if not character then return end
+    
+    local chamsTable = {}
+    
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            -- Orijinal material ve color'u kaydet
+            local originalMaterial = part.Material
+            local originalColor = part.Color
+            
+            -- Yeni part oluştur (chams)
+            local chamPart = part:Clone()
+            chamPart.Name = "ESP_Cham"
+            chamPart.Parent = part
+            chamPart.Material = Enum.Material.Neon
+            chamPart.Color = ESP.ChamsColor
+            chamPart.Transparency = ESP.Transparency
+            chamPart.CanCollide = false
+            chamPart.Anchored = false
+            
+            -- :p
+            table.insert(chamsTable, {
+                Part = part,
+                ChamPart = chamPart,
+                OriginalColor = originalColor,
+                OriginalMaterial = originalMaterial
+            })
+        end
+    end
+    
+    ChamsObjects[player] = chamsTable
+end
+
+-- Update Chams Color
+local function UpdateChamsColor()
+    for player, chamsTable in pairs(ChamsObjects) do
+        for _, data in ipairs(chamsTable) do
+            if data.ChamPart then
+                data.ChamPart.Color = ESP.ChamsColor
+                data.ChamPart.Transparency = ESP.Transparency
+            end
+        end
+    end
+end
+
+-- Remove ESP for a player
+local function RemoveESP(player)
+    if ESPObjects[player] then
+        for _, obj in ipairs(ESPObjects[player]) do
+            if obj and obj.Parent then
+                obj:Destroy()
+            end
+        end
+        ESPObjects[player] = nil
+    end
+    
+    if ChamsObjects[player] then
+        for _, data in ipairs(ChamsObjects[player]) do
+            if data.ChamPart and data.ChamPart.Parent then
+                data.ChamPart:Destroy()
+            end
+        end
+        ChamsObjects[player] = nil
+    end
+end
+
+-- ESP Loop
+spawn(function()
+    while wait(0.5) do
+        if ESP.Enabled then
+            local LocalPlayer = Players.LocalPlayer
+            local LocalTeam = LocalPlayer.Team
+            
+            for _, player in pairs(Players:GetPlayers()) do
+                if player == LocalPlayer then continue end
+                if ESP.TeamCheck and player.Team == LocalTeam then
+                    -- Takım arkadaşı ise ESP'yi kaldır
+                    RemoveESP(player)
+                    continue
+                end
+                
+                local character = player.Character
+                if not character then 
+                    RemoveESP(player)
+                    continue 
+                end
+                
+                local humanoid = character:FindFirstChild("Humanoid")
+                if not humanoid or humanoid.Health <= 0 then
+                    RemoveESP(player)
+                    continue
+                end
+                
+                -- Health Bar
+                if ESP.HealthBar then
+                    if not ESPObjects[player] then
+                        ESPObjects[player] = {}
+                    end
+                    
+                    local hasHealthBar = false
+                    for _, obj in ipairs(ESPObjects[player]) do
+                        if obj.Name == "ESP_HealthBar" then
+                            hasHealthBar = true
+                            -- Update health
+                            local fill = obj:FindFirstChild("Fill")
+                            if fill then
+                                local healthPercent = humanoid.Health / humanoid.MaxHealth
+                                fill.Size = UDim2.new(healthPercent, 0, 1, 0)
+                                -- Color: Green -> Yellow -> Red
+                                if healthPercent > 0.5 then
+                                    fill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                                elseif healthPercent > 0.25 then
+                                    fill.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+                                else
+                                    fill.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                                end
+                            end
+                        end
+                    end
+                    
+                    if not hasHealthBar then
+                        local bar = CreateHealthBar(player)
+                        if bar then
+                            table.insert(ESPObjects[player], bar)
+                        end
+                    end
+                else
+                    -- Health Bar kapalıysa kaldır
+                    if ESPObjects[player] then
+                        for _, obj in ipairs(ESPObjects[player]) do
+                            if obj.Name == "ESP_HealthBar" then
+                                obj:Destroy()
+                            end
+                        end
+                    end
+                end
+                
+                -- Chams
+                if ESP.Chams then
+                    if not ChamsObjects[player] then
+                        CreateChams(player)
+                    end
+                else
+                    if ChamsObjects[player] then
+                        RemoveESP(player)
+                    end
+                end
+            end
+        else
+            -- ESP kapalıysa her şeyi temizle
+            for player, _ in pairs(ESPObjects) do
+                RemoveESP(player)
+            end
+            for player, _ in pairs(ChamsObjects) do
+                RemoveESP(player)
+            end
+        end
+    end
+end)
+
+-- Player eklendiğinde
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        wait(0.5)
+        if ESP.Enabled then
+            RemoveESP(player)
+        end
+    end)
+end)
+
+-- Player çıktığında
+Players.PlayerRemoving:Connect(function(player)
+    RemoveESP(player)
+end)
+
+-- ESP Fonksiyonları
+function ESP:Toggle()
+    self.Enabled = not self.Enabled
+    if not self.Enabled then
+        -- Temizlik yap
+        for player, _ in pairs(ESPObjects) do
+            RemoveESP(player)
+        end
+        for player, _ in pairs(ChamsObjects) do
+            RemoveESP(player)
+        end
+    end
+    return self.Enabled
+end
+
+function ESP:SetChamsColor(color)
+    self.ChamsColor = color
+    UpdateChamsColor()
+end
+
+function ESP:SetTransparency(value)
+    self.Transparency = value
+    UpdateChamsColor()
+end
+-- ==================== ESP SONU ====================
+
 -- Interface Management
 local Rayfield = game:GetObjects("rbxassetid://10804731440")[1]
 
@@ -2489,5 +2851,121 @@ if Rayfield:FindFirstChild("Notice") then
 		Rayfield.Notice.Visible = false
 	end)
 end
+
+local MainTab = Window:CreateTab("Main", "1234567890") -- Tab oluştur
+
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotToggle",
+    Callback = function(Value)
+        Aimbot.Enabled = Value
+    end,
+})
+
+MainTab:CreateSlider({
+    Name = "Aimbot Smoothness",
+    Range = {0.05, 1},
+    Increment = 0.05,
+    CurrentValue = 0.3,
+    Flag = "Smoothness",
+    Callback = function(Value)
+        Aimbot:SetSmoothness(Value)
+    end,
+})
+
+MainTab:CreateSlider({
+    Name = "Aimbot FOV",
+    Range = {50, 500},
+    Increment = 5,
+    CurrentValue = 150,
+    Flag = "AimbotFOV",
+    Callback = function(Value)
+        Aimbot:SetFOV(Value)
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = true,
+    Flag = "TeamCheck",
+    Callback = function(Value)
+        Aimbot.TeamCheck = Value
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Wall Check",
+    CurrentValue = true,
+    Flag = "WallCheck",
+    Callback = function(Value)
+        Aimbot.WallCheck = Value
+    end,
+})
+
+-- ESP Toggle
+MainTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Flag = "ESPToggle",
+    Callback = function(Value)
+        ESP:Toggle()
+    end,
+})
+
+-- ESP Settings Section
+MainTab:CreateSection("ESP Settings")
+
+-- Team Check
+MainTab:CreateToggle({
+    Name = "ESP Team Check",
+    CurrentValue = true,
+    Flag = "ESPTeamCheck",
+    Callback = function(Value)
+        ESP.TeamCheck = Value
+    end,
+})
+
+-- Health Bar
+MainTab:CreateToggle({
+    Name = "Health Bar",
+    CurrentValue = true,
+    Flag = "HealthBar",
+    Callback = function(Value)
+        ESP.HealthBar = Value
+    end,
+})
+
+-- Chams
+MainTab:CreateToggle({
+    Name = "Chams",
+    CurrentValue = true,
+    Flag = "Chams",
+    Callback = function(Value)
+        ESP.Chams = Value
+    end,
+})
+
+-- Chams Color (ColorPicker)
+MainTab:CreateColorPicker({
+    Name = "Chams Color",
+    Color = Color3.fromRGB(0, 255, 0),
+    Flag = "ChamsColor",
+    Callback = function(Color)
+        ESP:SetChamsColor(Color)
+    end,
+})
+
+-- Chams Transparency
+MainTab:CreateSlider({
+    Name = "Chams Transparency",
+    Range = {0.1, 1},
+    Increment = 0.05,
+    CurrentValue = 0.5,
+    Flag = "ChamsTransparency",
+    Callback = function(Value)
+        ESP:SetTransparency(Value)
+    end,
+})	
 
 	return RayfieldLibrary
